@@ -102,38 +102,62 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
         // ══════════════════════════════════════════════════════
 
         /// <summary>서비스 헬스체크 — 항상 200 OK 반환 (Railway/k8s 프로브용)</summary>
-        /// <remarks>
-        /// DB 연결 여부와 관계없이 HTTP 200을 반환합니다.
-        /// 상세 상태는 응답 바디의 dbStatus / apiKeyStatus 필드로 확인하세요.
-        /// dbStatus = "ok" / "unavailable (no db)" / "error: {message}"
-        /// apiKeyStatus = "configured" / "missing" / "invalid-format"
-        /// </remarks>
         [HttpGet("health")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult Health(
             [FromServices] Microsoft.Extensions.Options.IOptions<Models.PA999Options> options)
         {
-            // ★ DB 쿼리 제거: 헬스체크는 서버 기동 여부만 확인
-            //   DB 상태는 별도 /api/PA999/health/detail 또는 로그로 확인
             var cs        = options.Value.ConnectionString ?? string.Empty;
             var dbStatus  = string.IsNullOrWhiteSpace(cs) || cs.Contains("YOUR_DB")
                 ? "unavailable (no db configured)"
                 : "configured (not probed)";
 
             var apiKey    = options.Value.AnthropicApiKey ?? string.Empty;
-            var keyStatus = string.IsNullOrWhiteSpace(apiKey) ? "missing"
-                          : apiKey.StartsWith("sk-ant-") ? "configured"
-                          : "configured";   // 포맷 무관 — 설정만 확인
+            var keyStatus = string.IsNullOrWhiteSpace(apiKey) ? "missing" : "configured";
 
             return Ok(new
             {
-                status       = "ok",        // 항상 ok — Railway 헬스체크 통과용
+                status       = "ok",
                 service      = "Bizentro.App.SV.PP.PA999S1_CKO087",
                 timestamp    = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 model        = options.Value.Model,
                 dbStatus,
                 apiKeyStatus = keyStatus
             });
+        }
+
+        /// <summary>DB 연결 실제 테스트 — 진단용</summary>
+        [HttpGet("health/db")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> HealthDb(
+            [FromServices] Microsoft.Extensions.Options.IOptions<Models.PA999Options> options)
+        {
+            var cs = options.Value.ConnectionString ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(cs) || cs.Contains("YOUR_DB"))
+                return Ok(new { dbStatus = "not configured", ok = false });
+
+            // TLS 설정 자동 보완 (PA999DbService와 동일 로직)
+            var lower = cs.ToLower();
+            if (!lower.Contains("encrypt="))         cs = cs.TrimEnd(';') + ";Encrypt=False";
+            if (!lower.Contains("trustservercert"))  cs = cs.TrimEnd(';') + ";TrustServerCertificate=True";
+            if (!lower.Contains("connect timeout") && !lower.Contains("connection timeout"))
+                cs = cs.TrimEnd(';') + ";Connect Timeout=10";
+
+            try
+            {
+                using var conn = new Microsoft.Data.SqlClient.SqlConnection(cs);
+                await conn.OpenAsync();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT TOP 1 TABLE_NM FROM PA999_TABLE_META WITH(NOLOCK)";
+                cmd.CommandTimeout = 10;
+                var val = await cmd.ExecuteScalarAsync();
+                return Ok(new { dbStatus = "ok", firstTable = val?.ToString(), ok = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[PA999] DB probe failed");
+                return Ok(new { dbStatus = "error", error = ex.Message, ok = false });
+            }
         }
 
         // ══════════════════════════════════════════════════════
