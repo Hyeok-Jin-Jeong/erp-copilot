@@ -126,6 +126,27 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
             });
         }
 
+        /// <summary>Railway 환경변수 진단 — MSSQL 관련 변수 목록</summary>
+        [HttpGet("health/env")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult HealthEnv()
+        {
+            var keys = new[]
+            {
+                "MSSQLSERVER_CONNECTION_STRING","MSSQLSERVER_HOST","MSSQLSERVER_PORT","MSSQLSERVER_USER","MSSQLSERVER_PASSWORD","MSSQLSERVER_DB",
+                "SQLSERVER_CONNECTION_STRING","SQLSERVER_HOST","SQLSERVER_PORT",
+                "DATABASE_URL","DATABASE_HOST","DATABASE_PORT",
+                "MSSQL_HOST","MSSQL_PORT","MSSQL_USER","MSSQL_PASSWORD","MSSQL_DB",
+                "RAILWAY_ENVIRONMENT","RAILWAY_SERVICE_ID","RAILWAY_PROJECT_ID"
+            };
+            var found = keys
+                .Select(k => new { key = k, val = Environment.GetEnvironmentVariable(k) })
+                .Where(x => x.val != null)
+                .Select(x => new { x.key, val = x.key.ToLower().Contains("password") ? "***" : x.val })
+                .ToList();
+            return Ok(new { found, count = found.Count });
+        }
+
         /// <summary>DB 연결 실제 테스트 — 진단용</summary>
         [HttpGet("health/db")]
         [ProducesResponseType(StatusCodes.Status200OK)]
