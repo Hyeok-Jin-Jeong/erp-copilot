@@ -1,0 +1,3 @@
+-- PA999_CHAT_LOG에 FEEDBACK_TYPE 컬럼 추가
+-- 'U' = User (현업 GOOD/BAD), 'D' = Developer (개발자 상세 평가)
+ALTER TABLE PA999_CHAT_LOG ADD FEEDBACK_TYPE CHAR(1) NULL;

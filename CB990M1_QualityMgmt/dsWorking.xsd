@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="dsWorking"
+    targetNamespace="http://tempuri.org/dsWorking.xsd"
+    elementFormDefault="qualified"
+    attributeFormDefault="qualified"
+    xmlns="http://tempuri.org/dsWorking.xsd"
+    xmlns:mstns="http://tempuri.org/dsWorking.xsd"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:msdata="urn:schemas-microsoft-com:xml-msdata"
+    xmlns:msprop="urn:schemas-microsoft-com:xml-msprop">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter"
+                  Modifier="AutoLayout, AnsiClass, Class, Public"
+                  SchemaSerializationMode="IncludeSchema"
+                  xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections />
+        <Tables />
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <!--
+    E_DATA: P_CB990M1_CKO087_S1 결과셋과 1:1 대응
+    PA999_CHAT_LOG 실제 컬럼 기준:
+      CREATED_DT   (구 INSRT_DT)
+      DEV_FEEDBACK (구 DEVELOPER_FEEDBACK)
+      FEEDBACK_DT  (구 UPDT_DT)
+      FEEDBACK_BY  (구 UPDT_USR)
+      USE_YN 제거, IS_ERROR 추가
+  -->
+  <xs:element name="dsWorking" msdata:IsDataSet="true" msdata:UseCurrentLocale="true"
+              msprop:Generator_DataSetName="dsWorking" msprop:Generator_UserDSName="dsWorking">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="E_DATA"
+            msprop:Generator_TableClassName="E_DATADataTable"
+            msprop:Generator_TableVarName="tableE_DATA"
+            msprop:Generator_RowChangedName="E_DATARowChanged"
+            msprop:Generator_TablePropName="E_DATA"
+            msprop:Generator_RowDeletingName="E_DATARowDeleting"
+            msprop:Generator_RowChangingName="E_DATARowChanging"
+            msprop:Generator_RowEvHandlerName="E_DATARowChangeEventHandler"
+            msprop:Generator_RowDeletedName="E_DATARowDeleted"
+            msprop:Generator_RowClassName="E_DATARow"
+            msprop:Generator_UserTableName="E_DATA"
+            msprop:Generator_RowEvArgName="E_DATARowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="CUD_CHAR"       type="xs:string"  minOccurs="0" />
+              <xs:element name="ROW_NUM"        type="xs:int"     minOccurs="0" />
+              <!-- PK -->
+              <xs:element name="LOG_SEQ"        type="xs:long"    minOccurs="0" />
+              <!-- ReadOnly 표시 컬럼 -->
+              <xs:element name="SESSION_ID"     type="xs:string"  minOccurs="0" />
+              <xs:element name="USER_ID"        type="xs:string"  minOccurs="0" />
+              <xs:element name="USER_QUERY"     type="xs:string"  minOccurs="0" />
+              <xs:element name="AI_RESPONSE"    type="xs:string"  minOccurs="0" />
+              <xs:element name="GENERATED_SQL"  type="xs:string"  minOccurs="0" />
+              <xs:element name="RELATED_TABLES" type="xs:string"  minOccurs="0" />
+              <xs:element name="IS_ERROR"       type="xs:boolean" minOccurs="0" />
+              <!-- 실제 컬럼명: CREATED_DT (구 INSRT_DT) -->
+              <xs:element name="CREATED_DT"     type="xs:string"  minOccurs="0" />
+              <!-- 편집 가능 컬럼 -->
+              <xs:element name="PERF_SCORE"     type="xs:int"     minOccurs="0" />
+              <xs:element name="SCORE_LABEL"    type="xs:string"  minOccurs="0" />
+              <!-- 실제 컬럼명: DEV_FEEDBACK (구 DEVELOPER_FEEDBACK) -->
+              <xs:element name="DEV_FEEDBACK"   type="xs:string"  minOccurs="0" />
+              <!-- 감사 정보: FEEDBACK_DT/BY (구 UPDT_DT/USR) -->
+              <xs:element name="FEEDBACK_DT"    type="xs:string"  minOccurs="0" />
+              <xs:element name="FEEDBACK_BY"    type="xs:string"  minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

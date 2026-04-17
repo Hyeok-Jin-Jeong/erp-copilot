@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="dsInput"
+    targetNamespace="http://tempuri.org/dsInput.xsd"
+    elementFormDefault="qualified"
+    attributeFormDefault="qualified"
+    xmlns="http://tempuri.org/dsInput.xsd"
+    xmlns:mstns="http://tempuri.org/dsInput.xsd"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:msdata="urn:schemas-microsoft-com:xml-msdata"
+    xmlns:msprop="urn:schemas-microsoft-com:xml-msprop">
+  <xs:annotation>
+    <xs:appinfo source="urn:schemas-microsoft-com:xml-msdatasource">
+      <DataSource DefaultConnectionIndex="0" FunctionsComponentName="QueriesTableAdapter"
+                  Modifier="AutoLayout, AnsiClass, Class, Public"
+                  SchemaSerializationMode="IncludeSchema"
+                  xmlns="urn:schemas-microsoft-com:xml-msdatasource">
+        <Connections />
+        <Tables />
+        <Sources />
+      </DataSource>
+    </xs:appinfo>
+  </xs:annotation>
+  <!--
+    I_DATA: UTP_CB990M1_CKO087 TVP와 1:1 대응 (6컬럼)
+    PA999_CHAT_LOG 실제 컬럼 기준:
+      DEV_FEEDBACK  (구 DEVELOPER_FEEDBACK)
+      USE_YN 제거  (해당 컬럼 없음)
+  -->
+  <xs:element name="dsInput" msdata:IsDataSet="true" msdata:UseCurrentLocale="true"
+              msprop:Generator_DataSetName="dsInput" msprop:Generator_UserDSName="dsInput">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="I_DATA"
+            msprop:Generator_TableClassName="I_DATADataTable"
+            msprop:Generator_TableVarName="tableI_DATA"
+            msprop:Generator_RowChangedName="I_DATARowChanged"
+            msprop:Generator_TablePropName="I_DATA"
+            msprop:Generator_RowDeletingName="I_DATARowDeleting"
+            msprop:Generator_RowChangingName="I_DATARowChanging"
+            msprop:Generator_RowEvHandlerName="I_DATARowChangeEventHandler"
+            msprop:Generator_RowDeletedName="I_DATARowDeleted"
+            msprop:Generator_RowClassName="I_DATARow"
+            msprop:Generator_UserTableName="I_DATA"
+            msprop:Generator_RowEvArgName="I_DATARowChangeEvent">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="CUD_CHAR"      type="xs:string"  minOccurs="0" />
+              <xs:element name="ROW_NUM"       type="xs:int"     minOccurs="0" />
+              <xs:element name="LOG_SEQ"       type="xs:long"    minOccurs="0" />
+              <xs:element name="PERF_SCORE"    type="xs:int"     minOccurs="0" />
+              <!-- 실제 컬럼명: DEV_FEEDBACK (DEVELOPER_FEEDBACK 아님) -->
+              <xs:element name="DEV_FEEDBACK"  type="xs:string"  minOccurs="0" />
+              <!-- UTP 6번째 컬럼 — 현재 미사용, null 허용 -->
+              <xs:element name="EXT1_CD"       type="xs:string"  minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

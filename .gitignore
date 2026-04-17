@@ -1,0 +1,64 @@
+# ───────────────────────────────────────────────
+#  UNIERP AI ChatBot (PA999) — .gitignore
+#  ⚠️  appsettings.local.json 은 절대 커밋하지 마세요
+# ───────────────────────────────────────────────
+
+# ── 시크릿 / 로컬 설정 ──────────────────────────
+appsettings.local.json
+appsettings.*.local.json
+appsettings.Development.json
+*.env
+.env
+secrets.json
+
+# ── 빌드 산출물 ──────────────────────────────────
+bin/
+obj/
+out/
+publish/
+
+# ── Visual Studio ─────────────────────────────────
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.ncb
+*.opendb
+
+# ── 로그 ─────────────────────────────────────────
+*.log
+logs/
+
+# ── OS / 에디터 ───────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.bak
+*~
+
+# ── .NET / NuGet ─────────────────────────────────
+*.nupkg
+*.snupkg
+project.lock.json
+packages/
+.nuget/
+
+# ── 테스트 / 커버리지 ─────────────────────────────
+TestResults/
+*.trx
+coverage/
+*.coverage
+*.coveragexml
+
+# ── PA999M1_ChatbotUI — 프레임워크 DLL 제외 ────────
+#   소스(.cs)는 포함, Bizentro/Infragistics 프레임워크 바이너리만 제외
+PA999M1_ChatbotUI/*.dll
+PA999M1_ChatbotUI/*.pdb
+PA999M1_ChatbotUI/*.dll.config
+PA999M1_ChatbotUI/*.xml
+
+# ── 허용 예외 ─────────────────────────────────────
+!appsettings.json
+!appsettings.local.json.example
