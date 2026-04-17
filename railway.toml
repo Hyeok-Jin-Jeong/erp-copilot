@@ -10,4 +10,4 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
 healthcheckPath = "/api/PA999/health"
-healthcheckTimeout = 60
+healthcheckTimeout = 300
