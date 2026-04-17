@@ -63,10 +63,22 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
         // ▶ 서버 시작 시 자동 실행
         // ══════════════════════════════════════════════════════
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
+            // ★ Fire-and-Forget: HTTP 서버 기동을 막지 않도록 즉시 반환
+            //   DB 없는 환경(Railway 배포 초기)에서도 서버가 정상 기동됨
+            //   warmup 실패는 경고 로그로만 처리 (챗봇 응답에 영향 없음)
+            _ = Task.Run(() => RunWarmupAsync(cancellationToken), CancellationToken.None);
+            return Task.CompletedTask;
+        }
+
+        private async Task RunWarmupAsync(CancellationToken cancellationToken)
+        {
+            // 서버 완전 기동 후 실행되도록 짧게 대기
+            await Task.Delay(2000, CancellationToken.None);
+
             _logger.LogInformation("═══════════════════════════════════════════");
-            _logger.LogInformation(" [CacheWarmup] 캐시 예열 시작...");
+            _logger.LogInformation(" [CacheWarmup] 캐시 예열 시작 (백그라운드)...");
             _logger.LogInformation("═══════════════════════════════════════════");
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
