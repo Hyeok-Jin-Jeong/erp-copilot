@@ -21,7 +21,8 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
 
         private const string EmbeddingEndpoint = "https://api.openai.com/v1/embeddings";
 
-        public bool IsEnabled => !string.IsNullOrWhiteSpace(_options.OpenAIApiKey);
+        /// <summary>OpenAI API Key 설정 여부 — false이면 모든 임베딩 메서드가 null/빈값 반환</summary>
+        public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.OpenAIApiKey);
 
         public PA999EmbeddingService(
             IHttpClientFactory httpFactory,
@@ -32,7 +33,7 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
             _options     = options.Value;
             _logger      = logger;
 
-            if (!IsEnabled)
+            if (!IsConfigured)
                 _logger.LogInformation("[Embedding] OpenAIApiKey 미설정 → RAG 임베딩 비활성화");
             else
                 _logger.LogInformation("[Embedding] RAG 임베딩 활성화 | 모델: {M}, TopK: {K}",
@@ -40,13 +41,13 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
         }
 
         // ══════════════════════════════════════════════════════
-        // ▶ 임베딩 생성
+        // ▶ 임베딩 생성 (단건)
         // ══════════════════════════════════════════════════════
 
         /// <summary>텍스트 → float[] 임베딩 벡터 반환. 비활성화 or 오류 시 null.</summary>
         public async Task<float[]?> GetEmbeddingAsync(string text)
         {
-            if (!IsEnabled) return null;
+            if (!IsConfigured) return null;
 
             try
             {
@@ -70,17 +71,7 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
                     return null;
                 }
 
-                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-                var arr = doc.RootElement
-                             .GetProperty("data")[0]
-                             .GetProperty("embedding");
-
-                var result = new float[arr.GetArrayLength()];
-                int i = 0;
-                foreach (var el in arr.EnumerateArray())
-                    result[i++] = el.GetSingle();
-
-                return result;
+                return ParseEmbeddingResponse(await response.Content.ReadAsStringAsync());
             }
             catch (Exception ex)
             {
@@ -90,7 +81,68 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
         }
 
         // ══════════════════════════════════════════════════════
-        // ▶ 유사도 계산
+        // ▶ 임베딩 생성 (배치)
+        // ══════════════════════════════════════════════════════
+
+        /// <summary>
+        /// 텍스트 목록 → 임베딩 벡터 목록 반환 (순서 보장).
+        /// 비활성화 or 오류 시 null.
+        /// OpenAI API는 배열 입력을 지원하므로 단일 요청으로 처리.
+        /// </summary>
+        public async Task<List<float[]>?> GetBatchEmbeddingsAsync(IList<string> texts)
+        {
+            if (!IsConfigured || texts.Count == 0) return null;
+
+            try
+            {
+                var client = _httpFactory.CreateClient("OpenAIEmbedding");
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", _options.OpenAIApiKey);
+
+                var body = JsonSerializer.Serialize(new
+                {
+                    input = texts,
+                    model = _options.EmbeddingModel,
+                });
+
+                var response = await client.PostAsync(
+                    EmbeddingEndpoint,
+                    new StringContent(body, Encoding.UTF8, "application/json"));
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("[Embedding] Batch API 오류 {Code}", response.StatusCode);
+                    return null;
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                var data = doc.RootElement.GetProperty("data");
+
+                // API 응답은 index 순서 보장됨
+                var results = new List<float[]>(data.GetArrayLength());
+                foreach (var item in data.EnumerateArray())
+                {
+                    var arr = item.GetProperty("embedding");
+                    var vec = new float[arr.GetArrayLength()];
+                    int i = 0;
+                    foreach (var el in arr.EnumerateArray())
+                        vec[i++] = el.GetSingle();
+                    results.Add(vec);
+                }
+
+                _logger.LogDebug("[Embedding] 배치 임베딩 완료 {Count}건", results.Count);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[Embedding] GetBatchEmbeddingsAsync 예외");
+                return null;
+            }
+        }
+
+        // ══════════════════════════════════════════════════════
+        // ▶ 유사도 계산 (static — ChatLogService에서 직접 호출)
         // ══════════════════════════════════════════════════════
 
         /// <summary>코사인 유사도 (0 ~ 1)</summary>
@@ -110,31 +162,51 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
             return dot / (MathF.Sqrt(normA) * MathF.Sqrt(normB));
         }
 
-        /// <summary>
-        /// 후보 텍스트 목록 중 질문과 가장 유사한 Top-K 인덱스 반환
-        /// 임베딩 비활성화 시 빈 배열 반환
-        /// </summary>
-        public async Task<int[]> GetTopKIndicesAsync(string query, IList<string> candidates)
+        // ══════════════════════════════════════════════════════
+        // ▶ 직렬화 / 역직렬화 (static — DB EMBEDDING 컬럼용 JSON)
+        // ══════════════════════════════════════════════════════
+
+        /// <summary>float[] → JSON 문자열 (DB 저장용)</summary>
+        public static string SerializeEmbedding(float[]? embedding)
         {
-            if (!IsEnabled || candidates.Count == 0) return Array.Empty<int>();
+            if (embedding == null || embedding.Length == 0) return "[]";
+            return JsonSerializer.Serialize(embedding);
+        }
 
-            var queryVec = await GetEmbeddingAsync(query);
-            if (queryVec == null) return Array.Empty<int>();
-
-            var scores = new List<(int Index, float Score)>();
-
-            foreach (var (text, idx) in candidates.Select((t, i) => (t, i)))
+        /// <summary>JSON 문자열 → float[] (DB 조회 후 복원용). null or 빈값 → null.</summary>
+        public static float[]? DeserializeEmbedding(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json) || json == "[]") return null;
+            try
             {
-                var vec = await GetEmbeddingAsync(text);
-                if (vec == null) continue;
-                scores.Add((idx, CosineSimilarity(queryVec, vec)));
+                return JsonSerializer.Deserialize<float[]>(json);
             }
+            catch
+            {
+                return null;
+            }
+        }
 
-            return scores
-                .OrderByDescending(s => s.Score)
-                .Take(_options.EmbeddingTopK)
-                .Select(s => s.Index)
-                .ToArray();
+        // ══════════════════════════════════════════════════════
+        // ▶ 내부 유틸
+        // ══════════════════════════════════════════════════════
+
+        private static float[]? ParseEmbeddingResponse(string responseJson)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(responseJson);
+                var arr = doc.RootElement
+                             .GetProperty("data")[0]
+                             .GetProperty("embedding");
+
+                var result = new float[arr.GetArrayLength()];
+                int i = 0;
+                foreach (var el in arr.EnumerateArray())
+                    result[i++] = el.GetSingle();
+                return result;
+            }
+            catch { return null; }
         }
     }
 }

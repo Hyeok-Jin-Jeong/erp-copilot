@@ -239,6 +239,12 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Models
         public string? CorrectSql    { get; set; }
         public string  Lesson        { get; set; } = string.Empty;
         public byte    Priority      { get; set; } = 5;
+
+        /// <summary>RAG 임베딩 벡터 (DB EMBEDDING 컬럼 역직렬화 결과). null이면 미생성.</summary>
+        public float[]? Embedding     { get; set; }
+
+        /// <summary>이 패턴에서 권장하는 처리 모드 (SP / SQL / SOP). null이면 제약 없음.</summary>
+        public string?  PreferredMode { get; set; }
     }
 
     /// <summary>
