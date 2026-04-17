@@ -126,6 +126,17 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Models
 
         /// <summary>세션 타임아웃 (분)</summary>
         public int SessionTimeoutMinutes { get; set; } = 30;
+
+        // ── RAG 임베딩 (OpenAI) ───────────────────────────────────
+
+        /// <summary>OpenAI API Key (RAG 임베딩용, 미설정 시 임베딩 비활성화)</summary>
+        public string OpenAIApiKey { get; set; } = string.Empty;
+
+        /// <summary>임베딩 모델 (기본: text-embedding-3-small)</summary>
+        public string EmbeddingModel { get; set; } = "text-embedding-3-small";
+
+        /// <summary>RAG Top-K 유사 패턴 수 (기본: 5)</summary>
+        public int EmbeddingTopK { get; set; } = 5;
     }
 
     // ══════════════════════════════════════════════════════════

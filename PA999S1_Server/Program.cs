@@ -8,6 +8,12 @@ using Bizentro.App.SV.PP.PA999S1_CKO087.Services;
 //  PA999M1 (UNIERP WinForms UI) ↔ 이 서버 ↔ Claude API / MSSQL
 // ══════════════════════════════════════════════════════════════
 
+// ── Railway / 클라우드 PORT 자동 감지 ─────────────────────────
+// Railway는 $PORT 환경변수로 포트를 주입. appsettings.json "Urls" 보다 우선 적용.
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+    Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"http://0.0.0.0:{port}");
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ── 1. 설정 바인딩 ────────────────────────────────────────────
