@@ -20,7 +20,9 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
         public PA999DbService(IOptions<PA999Options> options, ILogger<PA999DbService> logger)
         {
             // Railway/클라우드 환경에서 내부망 DB 미접근 시 무한 대기 방지 (Connect Timeout=5)
-            _connectionString = EnsureConnectTimeout(options.Value.ConnectionString, 5);
+            var cs = EnsureConnectTimeout(options.Value.ConnectionString, 5);
+            // Railway 환경에서 TLS 핸드셰이크 오류 방지 (Encrypt=False, TrustServerCertificate=True)
+            _connectionString = EnsureRailwayTlsSettings(cs);
             _logger           = logger;
         }
 
@@ -31,6 +33,24 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
             if (lower.Contains("connect timeout") || lower.Contains("connection timeout"))
                 return cs;
             return cs.TrimEnd(';') + $";Connect Timeout={seconds}";
+        }
+
+        /// <summary>
+        /// Railway/클라우드 MSSQL 연결 시 TLS pre-login 핸드셰이크 오류 방지
+        /// "Connection reset by peer" 해결: Encrypt=False + TrustServerCertificate=True
+        /// </summary>
+        private static string EnsureRailwayTlsSettings(string cs)
+        {
+            if (string.IsNullOrWhiteSpace(cs)) return cs;
+            var lower = cs.ToLower();
+
+            if (!lower.Contains("encrypt="))
+                cs = cs.TrimEnd(';') + ";Encrypt=False";
+
+            if (!lower.Contains("trustservercertificate="))
+                cs = cs.TrimEnd(';') + ";TrustServerCertificate=True";
+
+            return cs;
         }
 
         /// <summary>

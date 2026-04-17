@@ -44,12 +44,25 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
             // 내부망 DB 미접근 시 빠른 실패 (Connect Timeout=5)
             var cs = options.Value.ConnectionString ?? string.Empty;
             var lower = cs.ToLower();
-            _connectionString  = (lower.Contains("connect timeout") || lower.Contains("connection timeout"))
+            cs = (lower.Contains("connect timeout") || lower.Contains("connection timeout"))
                 ? cs
                 : cs.TrimEnd(';') + ";Connect Timeout=5";
+            // Railway/클라우드 TLS 핸드셰이크 오류 방지 (Encrypt=False, TrustServerCertificate=True)
+            _connectionString  = EnsureRailwayTlsSettings(cs);
             _logger            = logger;
             _embeddingService  = embeddingService;
             _topK              = options.Value.EmbeddingTopK > 0 ? options.Value.EmbeddingTopK : 5;
+        }
+
+        private static string EnsureRailwayTlsSettings(string cs)
+        {
+            if (string.IsNullOrWhiteSpace(cs)) return cs;
+            var lower = cs.ToLower();
+            if (!lower.Contains("encrypt="))
+                cs = cs.TrimEnd(';') + ";Encrypt=False";
+            if (!lower.Contains("trustservercertificate="))
+                cs = cs.TrimEnd(';') + ";TrustServerCertificate=True";
+            return cs;
         }
 
         // ══════════════════════════════════════════════════════
