@@ -19,8 +19,18 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
 
         public PA999DbService(IOptions<PA999Options> options, ILogger<PA999DbService> logger)
         {
-            _connectionString = options.Value.ConnectionString;
+            // Railway/클라우드 환경에서 내부망 DB 미접근 시 무한 대기 방지 (Connect Timeout=5)
+            _connectionString = EnsureConnectTimeout(options.Value.ConnectionString, 5);
             _logger           = logger;
+        }
+
+        private static string EnsureConnectTimeout(string cs, int seconds)
+        {
+            if (string.IsNullOrWhiteSpace(cs)) return cs;
+            var lower = cs.ToLower();
+            if (lower.Contains("connect timeout") || lower.Contains("connection timeout"))
+                return cs;
+            return cs.TrimEnd(';') + $";Connect Timeout={seconds}";
         }
 
         /// <summary>

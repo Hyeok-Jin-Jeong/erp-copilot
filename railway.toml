@@ -10,4 +10,4 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
 healthcheckPath = "/swagger/index.html"
-healthcheckTimeout = 60
+healthcheckTimeout = 300

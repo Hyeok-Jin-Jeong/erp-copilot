@@ -41,7 +41,12 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
             ILogger<PA999ChatLogService> logger,
             PA999EmbeddingService embeddingService)
         {
-            _connectionString  = options.Value.ConnectionString;
+            // 내부망 DB 미접근 시 빠른 실패 (Connect Timeout=5)
+            var cs = options.Value.ConnectionString ?? string.Empty;
+            var lower = cs.ToLower();
+            _connectionString  = (lower.Contains("connect timeout") || lower.Contains("connection timeout"))
+                ? cs
+                : cs.TrimEnd(';') + ";Connect Timeout=5";
             _logger            = logger;
             _embeddingService  = embeddingService;
             _topK              = options.Value.EmbeddingTopK > 0 ? options.Value.EmbeddingTopK : 5;
