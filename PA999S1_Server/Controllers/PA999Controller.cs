@@ -471,7 +471,7 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
                 results["dns_error"] = ex.Message;
             }
 
-            // 2. TCP 연결
+            // 2. TCP 연결 (hostname 방식)
             var tcpStart = System.Diagnostics.Stopwatch.StartNew();
             try
             {
@@ -490,6 +490,33 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
                 results["tcp_ms"]    = tcpStart.ElapsedMilliseconds;
                 results["tcp_error"] = ex.Message;
             }
+
+            // 3. 각 IP별 직접 TCP 테스트
+            var perIpResults = new List<object>();
+            if (results.TryGetValue("dns_addrs", out var addrsObj) && addrsObj is string[] addrs2)
+            {
+                foreach (var addr in addrs2)
+                {
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    try
+                    {
+                        var ip = System.Net.IPAddress.Parse(addr);
+                        var ep = new System.Net.IPEndPoint(ip, port);
+                        using var tcp2 = new System.Net.Sockets.TcpClient(ip.AddressFamily);
+                        var cts2 = new System.Threading.CancellationTokenSource(5000);
+                        await tcp2.ConnectAsync(ep, cts2.Token);
+                        sw.Stop();
+                        perIpResults.Add(new { ip = addr, ok = true, ms = sw.ElapsedMilliseconds });
+                        tcp2.Close();
+                    }
+                    catch (Exception ex2)
+                    {
+                        sw.Stop();
+                        perIpResults.Add(new { ip = addr, ok = false, ms = sw.ElapsedMilliseconds, error = ex2.Message });
+                    }
+                }
+            }
+            results["per_ip_tcp"] = perIpResults;
 
             // 3. 현재 연결 문자열 (비밀번호 마스킹)
             var cs = config["PA999S1:ConnectionString"] ?? "(없음)";
