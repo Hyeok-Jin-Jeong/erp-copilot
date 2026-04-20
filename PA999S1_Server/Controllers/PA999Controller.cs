@@ -126,60 +126,6 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
             });
         }
 
-        /// <summary>Railway 환경변수 진단 — MSSQL 관련 변수 목록</summary>
-        [HttpGet("health/env")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult HealthEnv()
-        {
-            var keys = new[]
-            {
-                "MSSQLSERVER_CONNECTION_STRING","MSSQLSERVER_HOST","MSSQLSERVER_PORT","MSSQLSERVER_USER","MSSQLSERVER_PASSWORD","MSSQLSERVER_DB",
-                "SQLSERVER_CONNECTION_STRING","SQLSERVER_HOST","SQLSERVER_PORT",
-                "DATABASE_URL","DATABASE_HOST","DATABASE_PORT",
-                "MSSQL_HOST","MSSQL_PORT","MSSQL_USER","MSSQL_PASSWORD","MSSQL_DB",
-                "RAILWAY_ENVIRONMENT","RAILWAY_SERVICE_ID","RAILWAY_PROJECT_ID"
-            };
-            var found = keys
-                .Select(k => new { key = k, val = Environment.GetEnvironmentVariable(k) })
-                .Where(x => x.val != null)
-                .Select(x => new { x.key, val = x.key.ToLower().Contains("password") ? "***" : x.val })
-                .ToList();
-            return Ok(new { found, count = found.Count });
-        }
-
-        /// <summary>DB 연결 실제 테스트 — 진단용</summary>
-        [HttpGet("health/db")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> HealthDb(
-            [FromServices] Microsoft.Extensions.Options.IOptions<Models.PA999Options> options)
-        {
-            var cs = options.Value.ConnectionString ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(cs) || cs.Contains("YOUR_DB"))
-                return Ok(new { dbStatus = "not configured", ok = false });
-
-            // TLS 설정 자동 보완 (PA999DbService와 동일 로직)
-            var lower = cs.ToLower();
-            if (!lower.Contains("encrypt="))         cs = cs.TrimEnd(';') + ";Encrypt=False";
-            if (!lower.Contains("trustservercert"))  cs = cs.TrimEnd(';') + ";TrustServerCertificate=True";
-            if (!lower.Contains("connect timeout") && !lower.Contains("connection timeout"))
-                cs = cs.TrimEnd(';') + ";Connect Timeout=10";
-
-            try
-            {
-                using var conn = new Microsoft.Data.SqlClient.SqlConnection(cs);
-                await conn.OpenAsync();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT TOP 1 TABLE_NM FROM PA999_TABLE_META WITH(NOLOCK)";
-                cmd.CommandTimeout = 10;
-                var val = await cmd.ExecuteScalarAsync();
-                return Ok(new { dbStatus = "ok", firstTable = val?.ToString(), ok = true });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[PA999] DB probe failed");
-                return Ok(new { dbStatus = "error", error = ex.Message, ok = false });
-            }
-        }
 
         // ══════════════════════════════════════════════════════
         // POST /api/PA999/meta/batch
