@@ -437,6 +437,59 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
             => string.IsNullOrWhiteSpace(s) ? "NULL" : $"N'{EscSql(s)}'";
 
         // ══════════════════════════════════════════════════════
+        // POST /api/PA999/admin/migrate   ← 임시 마이그레이션 전용
+        // X-Migration-Key 헤더 인증 + GO 배치 분리 실행
+        // ※ 마이그레이션 완료 후 반드시 제거
+        // ══════════════════════════════════════════════════════
+
+        /// <summary>
+        /// 임시 DB 마이그레이션 엔드포인트 — GO 배치 단위로 분리 실행
+        /// </summary>
+        [HttpPost("admin/migrate")]
+        public async Task<IActionResult> AdminMigrate(
+            [FromBody] PA999AdminQueryRequest request,
+            [FromServices] PA999DbService dbService,
+            [FromServices] IConfiguration config)
+        {
+            var key = config["PA999S1:MigrationKey"] ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(key))
+                return StatusCode(503, "MigrationKey 미설정");
+
+            if (!Request.Headers.TryGetValue("X-Migration-Key", out var hdr) || hdr.ToString() != key)
+                return Unauthorized("X-Migration-Key 불일치");
+
+            if (string.IsNullOrWhiteSpace(request?.Sql))
+                return BadRequest("SQL을 입력하세요.");
+
+            // GO 구분자 기준으로 배치 분리
+            var batches = System.Text.RegularExpressions.Regex
+                .Split(request.Sql, @"^\s*GO\s*$",
+                       System.Text.RegularExpressions.RegexOptions.Multiline |
+                       System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+                .Select(b => b.Trim())
+                .Where(b => b.Length > 0)
+                .ToList();
+
+            var results = new List<object>();
+            foreach (var batch in batches)
+            {
+                var r = await dbService.ExecuteNonQueryAsync(batch);
+                results.Add(new
+                {
+                    sql     = batch.Length > 120 ? batch[..120] + "..." : batch,
+                    ok      = r.IsSuccess,
+                    error   = r.ErrorMessage
+                });
+                if (!r.IsSuccess) break;   // 오류 시 중단
+            }
+
+            bool allOk = results.All(x => (bool)x.GetType().GetProperty("ok")!.GetValue(x)!);
+            return allOk
+                ? Ok(new { totalBatches = batches.Count, results })
+                : StatusCode(500, new { totalBatches = batches.Count, results });
+        }
+
+        // ══════════════════════════════════════════════════════
         // POST /api/PA999/admin/query
         // 관리자 전용 SQL 직접 실행 (분석/학습용)
         // ※ 운영 배포 시 반드시 제거 또는 IP 제한 필요

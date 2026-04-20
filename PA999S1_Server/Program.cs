@@ -157,8 +157,16 @@ app.Use(async (context, next) =>
                                 .Get<string[]>()
                          ?? Array.Empty<string>();
 
+        // admin/migrate: X-Migration-Key 헤더로 IP 우회 허용 (일회성 DB 마이그레이션용)
+        var migrationKey = builder.Configuration["PA999S1:MigrationKey"] ?? string.Empty;
+        bool hasMigrationKey = !string.IsNullOrWhiteSpace(migrationKey)
+            && context.Request.Path.StartsWithSegments("/api/PA999/admin/migrate")
+            && context.Request.Headers.TryGetValue("X-Migration-Key", out var keyHeader)
+            && keyHeader.ToString() == migrationKey;
+
         bool isAllowed = remoteIp is "::1" or "127.0.0.1"
-                      || allowedIps.Contains(remoteIp);
+                      || allowedIps.Contains(remoteIp)
+                      || hasMigrationKey;
 
         if (!isAllowed)
         {
