@@ -326,6 +326,13 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
             // 질문에서 2자 이상 한글/영문 토큰 추출
             var tokens = ExtractTokens(question);
 
+            // ── Demo 폴백: DB 불가 시 하드코딩 메타데이터 사용 ──────
+            if (!_dbService.IsDatabaseAvailable)
+            {
+                _logger.LogWarning("[PA999] DB 불가 — Demo 메타 폴백으로 Step1 실행");
+                return Step1_DemoFallback(question, tokens);
+            }
+
             // ── 1차: KEYWORD_LIST LIKE 검색 ──────────────────────
             var keywordSql = BuildKeywordSearchSql(tokens, searchColumn: "KEYWORD_LIST");
             var keywordResult = await _dbService.ExecuteQueryAsync(keywordSql);
@@ -425,6 +432,44 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
             {
                 SearchMethod    = "CLAUDE_SELECT",
                 MetaDescription = allMeta
+            });
+        }
+
+        // ── Demo 폴백: DB 불가 시 하드코딩 테이블 메타데이터 사용 ──
+        private (List<string> Tables, PA999MetaContext MetaCtx) Step1_DemoFallback(
+            string question, string[] tokens)
+        {
+            // 키워드로 관련 테이블 필터링
+            var metaResult = PA999DemoDataService.AllTableMeta;
+            var matched    = PA999DemoDataService.TableMeta
+                .Where(t =>
+                {
+                    var kw   = (t["KEYWORD_LIST"] as string ?? "").ToLower();
+                    var desc = (t["TABLE_DESC"]   as string ?? "").ToLower();
+                    var nm   = (t["TABLE_NM"]     as string ?? "").ToLower();
+                    return tokens.Any(tok =>
+                        kw.Contains(tok.ToLower())   ||
+                        desc.Contains(tok.ToLower()) ||
+                        nm.Contains(tok.ToLower()));
+                })
+                .Select(t => t["TABLE_NM"] as string ?? "")
+                .Where(s => !string.IsNullOrEmpty(s))
+                .Distinct()
+                .Take(3)
+                .ToList();
+
+            if (matched.Count == 0)
+                matched = new List<string> { "B_PLANT", "P_PROD_DAILY_HDR" };
+
+            var metaDesc = string.Join("\n", PA999DemoDataService.TableMeta
+                .Where(t => matched.Contains(t["TABLE_NM"] as string ?? ""))
+                .Select(t => $"- {t["TABLE_NM"]}: {t["TABLE_DESC"]} (키워드: {t["KEYWORD_LIST"]})"));
+
+            _logger.LogInformation("[PA999] Demo Step1 결과: {T}", string.Join(",", matched));
+            return (matched, new PA999MetaContext
+            {
+                SearchMethod    = "DEMO_KEYWORD_MATCH",
+                MetaDescription = metaDesc
             });
         }
 
