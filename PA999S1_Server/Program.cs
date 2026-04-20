@@ -157,10 +157,12 @@ app.Use(async (context, next) =>
                                 .Get<string[]>()
                          ?? Array.Empty<string>();
 
-        // admin/migrate: X-Migration-Key 헤더로 IP 우회 허용 (일회성 DB 마이그레이션용)
+        // admin/migrate + admin/netdiag: X-Migration-Key 헤더로 IP 우회 허용
         var migrationKey = builder.Configuration["PA999S1:MigrationKey"] ?? string.Empty;
+        bool isMigrationPath = context.Request.Path.StartsWithSegments("/api/PA999/admin/migrate")
+                            || context.Request.Path.StartsWithSegments("/api/PA999/admin/netdiag");
         bool hasMigrationKey = !string.IsNullOrWhiteSpace(migrationKey)
-            && context.Request.Path.StartsWithSegments("/api/PA999/admin/migrate")
+            && isMigrationPath
             && context.Request.Headers.TryGetValue("X-Migration-Key", out var keyHeader)
             && keyHeader.ToString() == migrationKey;
 
