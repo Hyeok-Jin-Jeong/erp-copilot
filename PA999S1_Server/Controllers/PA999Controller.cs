@@ -277,18 +277,55 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
             if (request.PerfScore < 1 || request.PerfScore > 5)
                 return BadRequest("점수(PerfScore)는 1~5 사이여야 합니다.");
 
+            var feedbackType = request.FeedbackType ?? "D";
+            var feedbackBy   = request.FeedbackBy   ?? "";
+
+            // ① PA999_CHAT_LOG 피드백 저장
             var ok = await _logService.UpdateFeedbackAsync(
                 logSeq, request.PerfScore, request.DevFeedback,
-                request.FeedbackBy ?? "", request.FeedbackType ?? "D");
+                feedbackBy, feedbackType);
 
             if (!ok)
                 return NotFound($"LOG_SEQ={logSeq} 를 찾을 수 없습니다.");
 
             _logger.LogInformation(
                 "[PA999Controller] 피드백 저장 LOG_SEQ={Seq} Score={S} By={B} Type={T}",
-                logSeq, request.PerfScore, request.FeedbackBy, request.FeedbackType ?? "D");
+                logSeq, request.PerfScore, feedbackBy, feedbackType);
 
-            return Ok(new { message = "피드백이 저장되었습니다.", logSeq, score = request.PerfScore });
+            // ② 부정 피드백(≤2) + AutoRegisterPattern → PA999_FEEDBACK_PATTERN 자동 등록
+            bool patternRegistered = false;
+            if (request.AutoRegisterPattern && request.PerfScore <= 2)
+            {
+                var logInfo = await _logService.GetChatLogBasicAsync(logSeq);
+                if (logInfo.HasValue)
+                {
+                    var lesson = string.IsNullOrWhiteSpace(request.DevFeedback)
+                        ? "사용자 부정 피드백 — SQL 또는 답변 품질 개선 필요"
+                        : request.DevFeedback;
+
+                    patternRegistered = await _logService.UpsertFeedbackPatternAsync(
+                        logSeq,
+                        logInfo.Value.UserQuery,            // queryPattern
+                        wrongApproach:  null,
+                        correctSql:     logInfo.Value.GeneratedSql,
+                        lesson:         lesson,
+                        priority:       7,                  // 교정 우선순위
+                        preferredMode:  null,
+                        userId:         feedbackBy.Length > 0 ? feedbackBy : "USER");
+
+                    if (patternRegistered)
+                        _logger.LogInformation(
+                            "[PA999Controller] 부정 피드백 패턴 자동 등록 LOG_SEQ={Seq}", logSeq);
+                }
+            }
+
+            return Ok(new
+            {
+                message           = "피드백이 저장되었습니다.",
+                logSeq,
+                score             = request.PerfScore,
+                patternRegistered
+            });
         }
 
         // ══════════════════════════════════════════════════════

@@ -218,7 +218,7 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Models
         /// <summary>응답 품질 점수 (1=매우 나쁨 ~ 5=매우 좋음)</summary>
         public int     PerfScore   { get; set; }
 
-        /// <summary>개발자 피드백 내용 (잘못된 SQL, 개선 방향 등)</summary>
+        /// <summary>피드백 내용 (사용자 의견 또는 개발자 교정 내역)</summary>
         public string  DevFeedback { get; set; } = string.Empty;
 
         /// <summary>피드백 작성자 ID</summary>
@@ -226,6 +226,12 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Models
 
         /// <summary>피드백 유형: "U"=사용자(현업 GOOD/BAD), "D"=개발자(상세 평가). 기본값 "D"</summary>
         public string? FeedbackType { get; set; }
+
+        /// <summary>
+        /// true이면 PerfScore ≤ 2인 경우 PA999_FEEDBACK_PATTERN에 자동 등록.
+        /// 사용자 👎 피드백에서 true로 전송. 개발자 API는 false(기본).
+        /// </summary>
+        public bool AutoRegisterPattern { get; set; } = false;
     }
 
     /// <summary>

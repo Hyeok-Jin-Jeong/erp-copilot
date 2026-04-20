@@ -1,25 +1,55 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useChat } from './hooks/useChat'
 import { ChatBubble } from './components/ChatBubble'
 import { ExampleButtons } from './components/ExampleButtons'
 import { ChatInput } from './components/ChatInput'
+import { HistorySidebar } from './components/HistorySidebar'
 
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
 
 export default function App() {
   const { messages, loading, ask, reset } = useChat()
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const bottomRef                         = useRef<HTMLDivElement>(null)
+  const [sidebarOpen, setSidebarOpen]     = useState(false)
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
+  /** 히스토리 사이드바 클릭 시 해당 메시지로 스크롤 */
+  const scrollToMessage = (id: string) => {
+    document.getElementById(`msg-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setSidebarOpen(false)
+  }
+
   return (
     <div className="flex h-screen flex-col bg-gray-50">
+
+      {/* ── 히스토리 사이드바 ── */}
+      <HistorySidebar
+        messages={messages}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onScrollTo={scrollToMessage}
+      />
+
       {/* ── Header ── */}
       <header className="flex items-center justify-between border-b border-gray-200 bg-white px-5 py-3 shadow-sm">
         <div className="flex items-center gap-3">
+          {/* 히스토리 토글 버튼 */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            title="대화 히스토리"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400
+              hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            aria-label="대화 히스토리 열기"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+            </svg>
+          </button>
+
           {/* Logo mark */}
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 shadow">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -69,7 +99,10 @@ export default function App() {
         ) : (
           <div className="mx-auto max-w-3xl space-y-5 px-4 py-6">
             {messages.map(msg => (
-              <ChatBubble key={msg.id} message={msg} />
+              /* 히스토리 앵커 id — HistorySidebar onScrollTo에서 참조 */
+              <div key={msg.id} id={`msg-${msg.id}`}>
+                <ChatBubble message={msg} />
+              </div>
             ))}
 
             {/* Loading indicator */}
