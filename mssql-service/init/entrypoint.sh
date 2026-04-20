@@ -57,5 +57,41 @@ echo "[entrypoint] DB 초기화 스크립트 실행..."
     -i /init/03_insert_demo_data.sql \
     && echo "[entrypoint] 03_insert_demo_data.sql 완료"
 
+# 4단계: CKO087 생산실적 테이블 생성
+/opt/mssql-tools18/bin/sqlcmd \
+    -S localhost \
+    -U SA \
+    -P "$SA_PWD" \
+    -C \
+    -i /init/04_CREATE_CKO087_TABLES.sql \
+    && echo "[entrypoint] 04_CREATE_CKO087_TABLES.sql 완료"
+
+# 5단계: 컬럼 한국어 메타 데이터 입력
+/opt/mssql-tools18/bin/sqlcmd \
+    -S localhost \
+    -U SA \
+    -P "$SA_PWD" \
+    -C \
+    -i /init/05_COLUMN_META_KO_NM.sql \
+    && echo "[entrypoint] 05_COLUMN_META_KO_NM.sql 완료"
+
+# 6단계: 피드백 패턴 20개 입력
+/opt/mssql-tools18/bin/sqlcmd \
+    -S localhost \
+    -U SA \
+    -P "$SA_PWD" \
+    -C \
+    -i /init/06_FEEDBACK_PATTERN_20EA.sql \
+    && echo "[entrypoint] 06_FEEDBACK_PATTERN_20EA.sql 완료"
+
+# 7단계: 현실적 샘플 데이터 입력
+/opt/mssql-tools18/bin/sqlcmd \
+    -S localhost \
+    -U SA \
+    -P "$SA_PWD" \
+    -C \
+    -i /init/07_REALISTIC_SAMPLE_DATA.sql \
+    && echo "[entrypoint] 07_REALISTIC_SAMPLE_DATA.sql 완료"
+
 echo "[entrypoint] ✅ DB 초기화 완료! SQL Server 실행 중..."
 wait $SQLPID

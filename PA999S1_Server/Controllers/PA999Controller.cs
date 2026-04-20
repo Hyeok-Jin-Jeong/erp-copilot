@@ -437,6 +437,73 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
             => string.IsNullOrWhiteSpace(s) ? "NULL" : $"N'{EscSql(s)}'";
 
         // ══════════════════════════════════════════════════════
+        // GET /api/PA999/admin/netdiag  ← 네트워크 진단 (임시)
+        // X-Migration-Key 헤더 인증
+        // ══════════════════════════════════════════════════════
+
+        [HttpGet("admin/netdiag")]
+        public async Task<IActionResult> AdminNetDiag(
+            [FromServices] IConfiguration config)
+        {
+            var key = config["PA999S1:MigrationKey"] ?? string.Empty;
+            if (!Request.Headers.TryGetValue("X-Migration-Key", out var hdr) || hdr.ToString() != key)
+                return Unauthorized("X-Migration-Key 불일치");
+
+            var host = "erp-copilot.railway.internal";
+            var port = 1433;
+            var results = new System.Collections.Generic.Dictionary<string, object>();
+
+            // 1. DNS 해석
+            var dnsStart = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                var addrs = await System.Net.Dns.GetHostAddressesAsync(host);
+                dnsStart.Stop();
+                results["dns_ok"]      = true;
+                results["dns_ms"]      = dnsStart.ElapsedMilliseconds;
+                results["dns_addrs"]   = addrs.Select(a => a.ToString()).ToArray();
+            }
+            catch (Exception ex)
+            {
+                dnsStart.Stop();
+                results["dns_ok"]    = false;
+                results["dns_ms"]    = dnsStart.ElapsedMilliseconds;
+                results["dns_error"] = ex.Message;
+            }
+
+            // 2. TCP 연결
+            var tcpStart = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                using var tcp = new System.Net.Sockets.TcpClient();
+                var cts = new System.Threading.CancellationTokenSource(5000);
+                await tcp.ConnectAsync(host, port, cts.Token);
+                tcpStart.Stop();
+                results["tcp_ok"] = true;
+                results["tcp_ms"] = tcpStart.ElapsedMilliseconds;
+                tcp.Close();
+            }
+            catch (Exception ex)
+            {
+                tcpStart.Stop();
+                results["tcp_ok"]    = false;
+                results["tcp_ms"]    = tcpStart.ElapsedMilliseconds;
+                results["tcp_error"] = ex.Message;
+            }
+
+            // 3. 현재 연결 문자열 (비밀번호 마스킹)
+            var cs = config["PA999S1:ConnectionString"] ?? "(없음)";
+            results["conn_str"] = System.Text.RegularExpressions.Regex.Replace(
+                cs, @"Password=[^;]+", "Password=***");
+
+            // 4. 환경 정보
+            results["env_hostname"]   = System.Net.Dns.GetHostName();
+            results["env_railway_private"] = Environment.GetEnvironmentVariable("RAILWAY_PRIVATE_DOMAIN") ?? "(없음)";
+
+            return Ok(results);
+        }
+
+        // ══════════════════════════════════════════════════════
         // POST /api/PA999/admin/migrate   ← 임시 마이그레이션 전용
         // X-Migration-Key 헤더 인증 + GO 배치 분리 실행
         // ※ 마이그레이션 완료 후 반드시 제거
