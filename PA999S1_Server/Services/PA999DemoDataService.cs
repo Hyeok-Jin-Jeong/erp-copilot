@@ -98,13 +98,49 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
                 matched.Select(t => new object?[] { t["TABLE_NM"], t["TABLE_DESC"], t["KEYWORD_LIST"], null }).ToArray());
         }
 
+        // ── INFORMATION_SCHEMA 컬럼 정보 하드코딩 ────────────────
+        private static readonly PA999QueryResult SchemaColumns = BuildResult(
+            new[] { "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE", "CHARACTER_MAXIMUM_LENGTH", "IS_NULLABLE" },
+            new object?[][]
+            {
+                // B_PLANT
+                new object?[] { "B_PLANT", "PLANT_CD",   "nvarchar", 10,   "NO"  },
+                new object?[] { "B_PLANT", "PLANT_NM",   "nvarchar", 100,  "NO"  },
+                new object?[] { "B_PLANT", "PLANT_TYPE", "nvarchar", 20,   "YES" },
+                new object?[] { "B_PLANT", "BIZ_AREA_CD","nvarchar", 10,   "YES" },
+                new object?[] { "B_PLANT", "REGION_NM",  "nvarchar", 50,   "YES" },
+                new object?[] { "B_PLANT", "USE_YN",     "char",     1,    "NO"  },
+                // B_ITEM
+                new object?[] { "B_ITEM", "ITEM_CD",      "nvarchar", 20,  "NO"  },
+                new object?[] { "B_ITEM", "ITEM_NM",      "nvarchar", 200, "NO"  },
+                new object?[] { "B_ITEM", "ITEM_TYPE_CD", "nvarchar", 10,  "YES" },
+                new object?[] { "B_ITEM", "UNIT",         "nvarchar", 10,  "YES" },
+                new object?[] { "B_ITEM", "USE_YN",       "char",     1,   "NO"  },
+                // P_PROD_DAILY_HDR
+                new object?[] { "P_PROD_DAILY_HDR", "PROD_SEQ",  "bigint",   null, "NO"  },
+                new object?[] { "P_PROD_DAILY_HDR", "PLANT_CD",  "nvarchar", 10,   "NO"  },
+                new object?[] { "P_PROD_DAILY_HDR", "PROD_DT",   "char",     8,    "NO"  },
+                new object?[] { "P_PROD_DAILY_HDR", "PROD_QTY",  "decimal",  null, "YES" },
+                new object?[] { "P_PROD_DAILY_HDR", "PROD_TYPE", "nvarchar", 10,   "YES" },
+                new object?[] { "P_PROD_DAILY_HDR", "ITEM_CD",   "nvarchar", 20,   "YES" },
+                // A_ACCT
+                new object?[] { "A_ACCT", "ACCT_CD",      "nvarchar", 10,  "NO"  },
+                new object?[] { "A_ACCT", "ACCT_NM",      "nvarchar", 100, "NO"  },
+                new object?[] { "A_ACCT", "ACCT_TYPE_CD", "nvarchar", 10,  "YES" },
+                new object?[] { "A_ACCT", "USE_YN",       "char",     1,   "NO"  },
+            });
+
         // ── 키워드 기반 결과 매핑 ─────────────────────────────────
         public PA999QueryResult GetDemoResult(string sql)
         {
             var s = sql.ToUpperInvariant();
 
-            // PA999_TABLE_META / INFORMATION_SCHEMA 조회
-            if (s.Contains("TABLE_META") || s.Contains("INFORMATION_SCHEMA"))
+            // INFORMATION_SCHEMA → 컬럼 스키마 반환
+            if (s.Contains("INFORMATION_SCHEMA"))
+                return SchemaColumns;
+
+            // PA999_TABLE_META → 테이블 메타 반환
+            if (s.Contains("TABLE_META"))
                 return AllTableMeta;
 
             // 생산 합계 / 생산량 관련
