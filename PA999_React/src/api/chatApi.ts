@@ -1,6 +1,10 @@
 import type { ChatRequest, ChatResponse, GridRow } from '../types/api'
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
+// VITE_API_BASE_URL 미설정 시 Railway 배포 URL을 기본값으로 사용
+const BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ??
+  'https://erp-copilot-api-production.up.railway.app'
+
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
 
 // ── Mock 응답 (VITE_DEMO_MODE=true 또는 서버 없을 때) ──────────
