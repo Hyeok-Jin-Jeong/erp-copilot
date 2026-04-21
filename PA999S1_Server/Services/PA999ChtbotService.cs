@@ -742,6 +742,31 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
                 return new ResolveResult(codes);
             }
 
+            // ── 2.5차: 다중 결과 중 정확명("단양공장" 등) 자동 선택 ─────
+            //   LIKE '%단양%' 이 과매칭(콜레이션/유니코드 이슈)으로 여러 행을 반환해도
+            //   그중 PLANT_NM이 plantKeyword+접미사 형태로 정확히 일치하는 행이 딱 하나면
+            //   되묻기 없이 해당 공장으로 확정. (사용자: "단일 매칭 시 재질문 분기 타지 않도록")
+            var autoSuffixes = new[] { "공장", "광업소", "사이로", "지점" };
+            foreach (var suffix in autoSuffixes)
+            {
+                var target = plantKeyword + suffix;
+                var exactRows = qr.Rows.Where(r =>
+                    r.TryGetValue("PLANT_NM", out var n) &&
+                    string.Equals(n?.ToString(), target, StringComparison.Ordinal)).ToList();
+                if (exactRows.Count == 1)
+                {
+                    var pcd = exactRows[0].TryGetValue("PLANT_CD", out var c) ? c?.ToString() : null;
+                    if (!string.IsNullOrEmpty(pcd))
+                    {
+                        codes[$"{plantKeyword}(공장)"] = pcd!;
+                        _logger.LogInformation(
+                            "[PA999] 공장코드 확정(다중중 정확명 자동선택): {K} -> {V} ({N})",
+                            target, pcd, target);
+                        return new ResolveResult(codes);
+                    }
+                }
+            }
+
             // ── 다중 결과: 사용자에게 되묻기 ────────────────────────────
             _logger.LogInformation("[PA999] 공장명 '{K}' 다중 매칭 {N}건 -> 사용자 재확인", plantKeyword, qr.Rows.Count);
             var sb = new System.Text.StringBuilder();

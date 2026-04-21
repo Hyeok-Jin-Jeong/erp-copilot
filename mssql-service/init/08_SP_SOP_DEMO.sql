@@ -403,5 +403,39 @@ BEGIN
 END
 GO
 
+-- ────────────────────────────────────────────────────────────
+-- ⑦ 기존 행 강제 갱신 (매번 startup 시 DIRECT_KEYWORDS / KEYWORD_LIST 최신화)
+--    IF NOT EXISTS 가드로 인해 초기 행이 남아있어도 컬럼값을 덮어써서
+--    SP/SOP 라우팅이 항상 최신 키워드로 동작하도록 보장.
+-- ────────────────────────────────────────────────────────────
+UPDATE PA999_SP_CATALOG
+   SET KEYWORD_LIST    = N'생산일보,일보,일일생산,일별생산,일별생산실적,생산현황,일보출력,호기별,공장일보',
+       DIRECT_KEYWORDS = N'생산일보,일일생산일보,공장생산일보'
+ WHERE SP_NAME = 'PA999_DEMO_SP_PROD_DAILY_R';
+
+UPDATE PA999_SP_CATALOG
+   SET KEYWORD_LIST    = N'레미콘월보,월보,월별생산,월간생산,레미콘월간,월보리포트,월간레미콘,월생산',
+       DIRECT_KEYWORDS = N'레미콘월보,레미콘 월보,월별레미콘보고서'
+ WHERE SP_NAME = 'PA999_DEMO_SP_REMICON_MONTHLY_R';
+
+UPDATE PA999_SP_CATALOG
+   SET KEYWORD_LIST    = N'공장마스터,공장기준정보,공장유형,공장분류,공장현황,공장리포트',
+       DIRECT_KEYWORDS = N'공장마스터리포트'
+ WHERE SP_NAME = 'PA999_DEMO_SP_PLANT_LIST_R';
+GO
+
+UPDATE PA999_SP_SOP
+   SET KEYWORD_LIST = N'일마감,마감취소,일마감취소,마감해제,일마감해제,일마감 취소,절차,가이드,방법,순서'
+ WHERE ERROR_TYPE = 'CLOSE_CANCEL';
+
+UPDATE PA999_SP_SOP
+   SET KEYWORD_LIST = N'공장추가,공장등록,신규공장,공장생성,공장만들기,공장 추가,절차,가이드,단계,순서'
+ WHERE ERROR_TYPE = 'PLANT_ADD';
+
+UPDATE PA999_SP_SOP
+   SET KEYWORD_LIST = N'작업장등록,작업장추가,작업장 등록,작업장 추가,호기등록,호기추가,라인등록,절차,가이드,단계,순서,방법'
+ WHERE ERROR_TYPE = 'WC_REGISTER';
+GO
+
 PRINT N'✅ SP/SOP Demo Seed 완료';
 GO
