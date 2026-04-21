@@ -619,12 +619,19 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Services
                 var conditions = string.Join(" OR ",
                     tokens.Select(t => $"KEYWORD_LIST LIKE N'%{EscapeSql(t)}%'"));
 
+                // ★ 매칭 점수 계산: 일치 토큰 수가 많은 SOP 우선 (같은 키워드 공유 이슈 해결)
+                var matchScore = string.Join(" + \n                           ",
+                    tokens.Select(t =>
+                        $"CASE WHEN KEYWORD_LIST LIKE N'%{EscapeSql(t)}%' THEN 1 ELSE 0 END"));
+
                 var sql = $@"
                     SELECT TOP 3 SOP_ID, SP_ID, ERROR_TYPE, CAUSE_DESC,
-                           ACTION_GUIDE, MENU_PATH, KEYWORD_LIST, SEVERITY
+                           ACTION_GUIDE, MENU_PATH, KEYWORD_LIST, SEVERITY,
+                           ({matchScore}) AS MATCH_SCORE
                     FROM PA999_SP_SOP
                     WHERE USE_YN = 'Y' AND ({conditions})
                     ORDER BY
+                        ({matchScore}) DESC,
                         CASE WHEN SP_ID IS NULL THEN 0 ELSE 1 END ASC,
                         SOP_ID ASC";
 
