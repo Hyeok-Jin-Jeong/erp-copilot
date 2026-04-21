@@ -118,7 +118,7 @@ BEGIN
 END
 CLOSE rc_cur; DEALLOCATE rc_cur;
 
-PRINT 'P_PROD_DAILY_HDR 재삽입: ' + CAST((SELECT COUNT(*) FROM P_PROD_DAILY_HDR) AS VARCHAR) + '건';
+DECLARE @_cnt1 INT = (SELECT COUNT(*) FROM P_PROD_DAILY_HDR); PRINT 'P_PROD_DAILY_HDR 재삽입: ' + CAST(@_cnt1 AS VARCHAR) + '건';
 GO
 
 -- ──────────────────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ INSERT INTO @wc_list VALUES
 ('RM1', 1400, 1450, 1380),
 ('RM2', 1327, 1380, 1320);
 
-OPEN wc_cur; -- 재사용 불가, 재선언
+-- removed orphan OPEN wc_cur
 DECLARE @wc2 NVARCHAR(20); DECLARE @wbq2 INT; DECLARE @wpq2 INT; DECLARE @wmm2 INT;
 DECLARE wc_cur2 CURSOR FOR SELECT WC_CD, BASE_QTY, PLAN_QTY, WORK_MIN FROM @wc_list;
 OPEN wc_cur2; FETCH NEXT FROM wc_cur2 INTO @wc2, @wbq2, @wpq2, @wmm2;
@@ -232,8 +232,7 @@ BEGIN
 END
 CLOSE wc_cur2; DEALLOCATE wc_cur2;
 
-PRINT 'P_PROD_DAILY_HDR_CKO087 삽입: '
-      + CAST((SELECT COUNT(*) FROM P_PROD_DAILY_HDR_CKO087) AS VARCHAR) + '건';
+DECLARE @_cnt2 INT = (SELECT COUNT(*) FROM P_PROD_DAILY_HDR_CKO087); PRINT 'P_PROD_DAILY_HDR_CKO087 삽입: ' + CAST(@_cnt2 AS VARCHAR) + '건';
 GO
 
 -- ──────────────────────────────────────────────────────────────────
@@ -256,8 +255,7 @@ SELECT
     H.DAY_MAGAM_YN
 FROM P_PROD_DAILY_HDR_CKO087 H;
 
-PRINT 'P_PROD_DAILY_DTL_CKO087 삽입: '
-      + CAST((SELECT COUNT(*) FROM P_PROD_DAILY_DTL_CKO087) AS VARCHAR) + '건';
+DECLARE @_cnt3 INT = (SELECT COUNT(*) FROM P_PROD_DAILY_DTL_CKO087); PRINT 'P_PROD_DAILY_DTL_CKO087 삽입: ' + CAST(@_cnt3 AS VARCHAR) + '건';
 GO
 
 -- ──────────────────────────────────────────────────────────────────
@@ -310,7 +308,7 @@ BEGIN
                                              WHEN 6 THEN 'RC3000'
                                              ELSE 'RC2500'
                                            END;
-            DECLARE @mixno NVARCHAR(20) = 'MX' + RIGHT('000' + CAST(ABS(CHECKSUM(NEWID())) % 900 + 100, 3), 3);
+            DECLARE @mixno NVARCHAR(20) = 'MX' + RIGHT('000' + CAST(ABS(CHECKSUM(NEWID())) % 900 + 100 AS VARCHAR(3)), 3);
             DECLARE @truck INT = CAST(@rqty / 6.0 AS INT) + 1;  -- 레미콘 1대 = 약 6M3
             INSERT INTO P_PROD_REMICON_HDR_CKO087
                 (PLANT_CD, PROD_DT, WC_CD, MIX_NO, ITEM_CD, PROD_QTY, PLAN_QTY, TRUCK_CNT, DAY_MAGAM_YN)
@@ -329,10 +327,11 @@ BEGIN
             DECLARE @rqty4 DECIMAL(18,2) = CAST(@rbq + (ABS(CHECKSUM(NEWID())) % 51) - 25 AS DECIMAL(18,2));
             DECLARE @icd4  NVARCHAR(20)  = CASE (ABS(CHECKSUM(NEWID())) % 10)
                                              WHEN 9 THEN 'RC3500'
-                                             WHEN 7,8 THEN 'RC3000'
+                                             WHEN 7 THEN 'RC3000'
+                                             WHEN 8 THEN 'RC3000'
                                              ELSE 'RC2500'
                                            END;
-            DECLARE @mixno4 NVARCHAR(20) = 'MX' + RIGHT('000' + CAST(ABS(CHECKSUM(NEWID())) % 900 + 100, 3), 3);
+            DECLARE @mixno4 NVARCHAR(20) = 'MX' + RIGHT('000' + CAST(ABS(CHECKSUM(NEWID())) % 900 + 100 AS VARCHAR(3)), 3);
             INSERT INTO P_PROD_REMICON_HDR_CKO087
                 (PLANT_CD, PROD_DT, WC_CD, MIX_NO, ITEM_CD, PROD_QTY, PLAN_QTY, TRUCK_CNT, DAY_MAGAM_YN)
             VALUES (@rpc, @dds4r, @rwc, @mixno4, @icd4, @rqty4,
@@ -346,8 +345,7 @@ BEGIN
 END
 CLOSE rc2_cur; DEALLOCATE rc2_cur;
 
-PRINT 'P_PROD_REMICON_HDR_CKO087 삽입: '
-      + CAST((SELECT COUNT(*) FROM P_PROD_REMICON_HDR_CKO087) AS VARCHAR) + '건';
+DECLARE @_cnt4 INT = (SELECT COUNT(*) FROM P_PROD_REMICON_HDR_CKO087); PRINT 'P_PROD_REMICON_HDR_CKO087 삽입: ' + CAST(@_cnt4 AS VARCHAR) + '건';
 GO
 
 -- ──────────────────────────────────────────────────────────────────
@@ -373,8 +371,7 @@ SELECT
     H.DAY_MAGAM_YN
 FROM P_PROD_REMICON_HDR_CKO087 H;
 
-PRINT 'P_PROD_REMICON_DTL_CKO087 삽입: '
-      + CAST((SELECT COUNT(*) FROM P_PROD_REMICON_DTL_CKO087) AS VARCHAR) + '건';
+DECLARE @_cnt5 INT = (SELECT COUNT(*) FROM P_PROD_REMICON_DTL_CKO087); PRINT 'P_PROD_REMICON_DTL_CKO087 삽입: ' + CAST(@_cnt5 AS VARCHAR) + '건';
 GO
 
 -- ──────────────────────────────────────────────────────────────────
@@ -428,8 +425,7 @@ BEGIN
 END
 CLOSE rt_cur; DEALLOCATE rt_cur;
 
-PRINT 'P_PROD_REMITAL_HDR_CKO087 삽입: '
-      + CAST((SELECT COUNT(*) FROM P_PROD_REMITAL_HDR_CKO087) AS VARCHAR) + '건';
+DECLARE @_cnt6 INT = (SELECT COUNT(*) FROM P_PROD_REMITAL_HDR_CKO087); PRINT 'P_PROD_REMITAL_HDR_CKO087 삽입: ' + CAST(@_cnt6 AS VARCHAR) + '건';
 GO
 
 -- ──────────────────────────────────────────────────────────────────
@@ -446,8 +442,7 @@ SELECT
     H.DAY_MAGAM_YN
 FROM P_PROD_REMITAL_HDR_CKO087 H;
 
-PRINT 'P_PROD_REMITAL_DTL_CKO087 삽입: '
-      + CAST((SELECT COUNT(*) FROM P_PROD_REMITAL_DTL_CKO087) AS VARCHAR) + '건';
+DECLARE @_cnt7 INT = (SELECT COUNT(*) FROM P_PROD_REMITAL_DTL_CKO087); PRINT 'P_PROD_REMITAL_DTL_CKO087 삽입: ' + CAST(@_cnt7 AS VARCHAR) + '건';
 GO
 
 -- ──────────────────────────────────────────────────────────────────
