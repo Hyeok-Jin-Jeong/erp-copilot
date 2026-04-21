@@ -62,6 +62,7 @@ run_sql /init/04_CREATE_CKO087_TABLES.sql "04_CREATE_CKO087_TABLES.sql"
 run_sql /init/05_COLUMN_META_KO_NM.sql    "05_COLUMN_META_KO_NM.sql"
 run_sql /init/06_FEEDBACK_PATTERN_20EA.sql "06_FEEDBACK_PATTERN_20EA.sql"
 run_sql /init/07_REALISTIC_SAMPLE_DATA.sql "07_REALISTIC_SAMPLE_DATA.sql"
+run_sql /init/08_SP_SOP_DEMO.sql           "08_SP_SOP_DEMO.sql"
 
 echo "[entrypoint] ✅ DB 초기화 완료! SQL Server 실행 중..."
 wait $SQLPID

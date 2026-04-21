@@ -9,6 +9,19 @@ USE PA999_DEMO;
 GO
 
 -- ────────────────────────────────────────────────────────────
+-- ⓪ B_PLANT.PLANT_GUBUN_CD 자동 채움 (04에서 ALTER로 추가된 컬럼)
+--   매번 startup 시 REMICON/CEMENT/REMITAL 구분코드 정규화
+-- ────────────────────────────────────────────────────────────
+IF COL_LENGTH('B_PLANT', 'PLANT_GUBUN_CD') IS NOT NULL
+BEGIN
+    UPDATE B_PLANT SET PLANT_GUBUN_CD = '300' WHERE PLANT_TYPE = 'REMICON' AND (PLANT_GUBUN_CD IS NULL OR PLANT_GUBUN_CD = '');
+    UPDATE B_PLANT SET PLANT_GUBUN_CD = '100' WHERE PLANT_TYPE = 'CEMENT'  AND (PLANT_GUBUN_CD IS NULL OR PLANT_GUBUN_CD = '');
+    UPDATE B_PLANT SET PLANT_GUBUN_CD = '400' WHERE PLANT_TYPE = 'REMITAL' AND (PLANT_GUBUN_CD IS NULL OR PLANT_GUBUN_CD = '');
+    PRINT 'B_PLANT.PLANT_GUBUN_CD 정규화 완료';
+END
+GO
+
+-- ────────────────────────────────────────────────────────────
 -- ① 메타 테이블 생성
 -- ────────────────────────────────────────────────────────────
 IF OBJECT_ID('PA999_SP_CATALOG', 'U') IS NULL
