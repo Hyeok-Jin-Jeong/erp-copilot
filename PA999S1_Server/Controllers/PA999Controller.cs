@@ -595,8 +595,16 @@ namespace Bizentro.App.SV.PP.PA999S1_CKO087.Controllers
         [HttpPost("admin/query")]
         public async Task<IActionResult> AdminQuery(
             [FromBody] PA999AdminQueryRequest request,
-            [FromServices] PA999DbService dbService)
+            [FromServices] PA999DbService dbService,
+            [FromServices] IConfiguration config)
         {
+            // X-Migration-Key 헤더가 있으면 인증 통과(미들웨어에서 IP 우회 처리됨)
+            // 헤더가 없으면 IP 화이트리스트만으로 접근 허용(로컬/온프레미스)
+            var migKey = config["PA999S1:MigrationKey"] ?? string.Empty;
+            if (Request.Headers.TryGetValue("X-Migration-Key", out var hdrK) &&
+                !string.IsNullOrWhiteSpace(migKey) && hdrK.ToString() != migKey)
+                return Unauthorized("X-Migration-Key 불일치");
+
             if (string.IsNullOrWhiteSpace(request?.Sql))
                 return BadRequest("SQL을 입력하세요.");
 

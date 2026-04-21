@@ -62,3 +62,7 @@ PA999M1_ChatbotUI/*.xml
 # ── 허용 예외 ─────────────────────────────────────
 !appsettings.json
 !appsettings.local.json.example
+
+# Accidentally created temp dump files
+%TEMP%*
+H,*resp*

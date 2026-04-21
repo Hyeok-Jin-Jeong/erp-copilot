@@ -160,7 +160,8 @@ app.Use(async (context, next) =>
         // admin/migrate + admin/netdiag: X-Migration-Key 헤더로 IP 우회 허용
         var migrationKey = builder.Configuration["PA999S1:MigrationKey"] ?? string.Empty;
         bool isMigrationPath = context.Request.Path.StartsWithSegments("/api/PA999/admin/migrate")
-                            || context.Request.Path.StartsWithSegments("/api/PA999/admin/netdiag");
+                            || context.Request.Path.StartsWithSegments("/api/PA999/admin/netdiag")
+                            || context.Request.Path.StartsWithSegments("/api/PA999/admin/query");
         bool hasMigrationKey = !string.IsNullOrWhiteSpace(migrationKey)
             && isMigrationPath
             && context.Request.Headers.TryGetValue("X-Migration-Key", out var keyHeader)
